@@ -1,0 +1,61 @@
+BR(1)                          User Commands                         BR(1)
+
+NAME
+       br - Bulk Rename Files and Directories
+
+SYNOPSIS
+       br [SOURCE ...]
+
+DESCRIPTION
+       br is a command-line utility for bulk renaming files and directories.
+       It allows you to rename multiple files and directories simultaneously
+       by opening a temporary file with a list of filenames in a text editor.
+       After editing the filenames, br will rename the corresponding files
+       and directories based on the modifications made in the editor.
+
+OPTIONS
+       None.
+
+ARGUMENTS
+       SOURCE
+              Optional list of source files or directories to be renamed. If
+              no source is provided, br will read files and directories from
+              the current working directory.
+
+USAGE
+       1. Rename files and directories using the default text editor (vi):
+          $ br
+
+       2. Rename specific files and directories:
+          $ br file1.txt file2.txt directory
+
+       3. Rename files and directories using a custom text editor:
+          $ EDITOR=nano br
+
+EXIT STATUS
+       The br utility exits with the following values:
+       0      Successful completion.
+       >0     An error occurred.
+
+EXAMPLES
+       Example 1: Rename files in the current directory.
+       $ br
+
+       Example 2: Rename specific files and directories.
+       $ br file1.txt file2.txt directory
+
+       Example 3: Use a custom text editor for renaming.
+       $ EDITOR=nano br
+
+SEE ALSO
+       mv(1), rename(2)
+
+AUTHOR
+       Jefferson Sa jhsoperacao@gmail.com
+
+COPYRIGHT
+       This program is distributed under the terms of the MIT License.
+
+BUGS
+       Report bugs to the GitHub repository:
+       https://github.com/Vulto/br
