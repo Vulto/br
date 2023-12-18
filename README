@@ -7,7 +7,7 @@ To use br, run the executable from the command line. If no arguments are provide
 ./br [file1] [file2] ...
 If you run br without any arguments, it will operate on all regular files and directories in the current directory.
 
-## How it Works
+## How it Works 
 Listing Files: br first lists the files and directories either from the command-line arguments or from the current directory.
 
 ## Changing default Editor:
