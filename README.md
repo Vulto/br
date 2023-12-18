@@ -20,8 +20,9 @@ br relies on $EDITOR
 br skips files with names '.' and '..', as these represent the current and parent directories.
 If a destination file already exists, br will skip renaming that particular file and proceed with the next one.
 Error messages will be displayed if any issues occur during the process.
-Dependencies
-br relies on standard C libraries and system calls. No external libraries are used.
+
+## Dependencies
+br Standard C libraries and a text editor
 
 ## Build
 ./c 
