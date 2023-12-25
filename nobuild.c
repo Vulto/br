@@ -1,43 +1,72 @@
 #define NOBUILD_IMPLEMENTATION
-#include <./nobuild.h>
-
-#define CFLAGS "-Wall", "-Wextra", "-Wswitch-enum", "-pedantic", \
-				"-pedantic-errors", "-Wmissing-include-dirs", "-O3"
+#include "./nobuild.h"
 
 #define BIN "br"
-#define DEBUGGER "gdb"
-#define SOURCE "main.c"
-#define DESTDIR "/usr/local/bin"
-#define CC "clang"
+#define SRC "main.c"
+#define DESTDIR "/usr/local/bin/"
+#define CFLAGS	"-Wall",		\
+				"-pedantic",	\
+				"-std=c2x"
 
-const char *cc(void){
-    const char *result = getenv("CC");
+char *cc(void);
+void BuildBin(void);
+void Install(void);
+void Remove(void);
+void Clean(void);
+
+int main(int argc, char *argv[]) {
+    GO_REBUILD_URSELF(argc, argv);
+	
+    if (argc < 2 ){
+		BuildBin();
+		return EXIT_SUCCESS;
+	}
+
+    for (int i = 1; i < argc; i++) {
+        char *arg = argv[i];
+
+        if (arg[0] == '-') {
+            for (int j = 1; j < strlen(arg); j++) {
+
+                switch (arg[j]) {
+                    case 'i':
+						Install();
+                        break;
+                    case 'r':
+                    	Remove(); 
+                        break;
+                    case 'f':
+                       	Clean();
+                        break;
+                    default:
+                        printf("Unknown option: %c\n", arg[j]);
+                        break;
+                }
+            }
+        } else {
+    		printf("Usage: %s [-d] [-r] [-f]\n", argv[0]);
+        }
+    }
+    return EXIT_SUCCESS;
+}
+
+char *cc(void){
+    char *result = getenv("CC");
     return result ? result : "cc";
 }
 
-int posix_main(int argc, char **argv){
-    CMD(CC, CFLAGS, "-o", BIN, SOURCE);
-
-    if (argc > 1){
-        if (strcmp(argv[1], "run") == 0){
-            CMD(BIN);
-        }else if (strcmp(argv[1], "gdb") == 0){
-            CMD(DEBUGGER, "./BIN");
-        }else if (strcmp(argv[1], "valgrind") == 0){
-            CMD("valgrind", "--error-exitcode=1", BIN);
-        }else if (strcmp(argv[1], "install") == 0){
-			CMD("doas", "cp", BIN, DESTDIR);
-        }else{
-            PANIC("%s is unknown subcommand", argv[1]);
-        }
-    }
-
-    return 0;
+void BuildBin(void) {
+	CMD(cc(), "-o", BIN, SRC);
 }
 
-int main(int argc, char **argv){
-    GO_REBUILD_URSELF(argc, argv);
-
-    return posix_main(argc, argv);
+void Install(void) {
+	CMD("doas", "cp", BIN, DESTDIR);
 }
 
+void Remove(void) {
+	CMD("doas", "rm", "-v", DESTDIR""BIN);
+}
+
+void Clean(void) {
+	CMD("rm", BIN, "c.old");
+}
