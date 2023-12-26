@@ -14,32 +14,23 @@ int is_current_or_parent_dir(const char *dir) {
     return (strcmp(dir, ".") == 0 || strcmp(dir, "..") == 0);
 }
 
-int main(int argc, char *argv[]) {
-    char filenames_file[] = "/tmp/vimv.XXXXXX";
-    char **src = NULL;
-    char **dest = NULL;
-    int count = 0;
+void read_from_pipe_or_here_string(char ***src, int *count) {
+    char path[PATH_MAX];
 
-    // Initialize src array
-    if (argc != 1) {
-        // Use command-line arguments as src files/directories
-        src = malloc((argc - 1) * sizeof(char *));
-        for (int i = 0; i < argc - 1; i++) {
-            src[i] = strdup(argv[i + 1]);
-        }
-    } else {
+    if (isatty(fileno(stdin))) {
         // Read files/directories from current directory
-        src = malloc(MAX_FILES * sizeof(char *));
-        size_t i = 0;
-        char path[PATH_MAX];
+        *src = malloc(MAX_FILES * sizeof(char *));
+        *count = 0;
+
         getcwd(path, PATH_MAX);
         DIR *dir = opendir(path);
         if (dir == NULL) {
             perror("Cannot open directory");
             exit(EXIT_FAILURE);
         }
+
         struct dirent *entry;
-        while ((entry = readdir(dir)) != NULL && i < MAX_FILES) {
+        while ((entry = readdir(dir)) != NULL && *count < MAX_FILES) {
             if (is_current_or_parent_dir(entry->d_name)) {
                 continue;
             }
@@ -48,14 +39,35 @@ int main(int argc, char *argv[]) {
                 perror("Failed to get file status");
                 continue;
             }
-            if (S_ISREG(file_stat.st_mode) || S_ISDIR(file_stat.st_mode)) { // Regular file or directory
-                src[i++] = strdup(entry->d_name);
+            if (S_ISREG(file_stat.st_mode) || S_ISDIR(file_stat.st_mode)) {
+                (*src)[(*count)++] = strdup(entry->d_name);
             }
         }
+
         closedir(dir);
+    } else {
+        // Read input from pipe or here-string
+        *src = malloc(MAX_FILES * sizeof(char *));
+        *count = 0;
+
+        char line[PATH_MAX];
+        while (fgets(line, PATH_MAX, stdin) != NULL && *count < MAX_FILES) {
+            line[strcspn(line, "\n")] = '\0'; // Remove trailing newline
+            (*src)[(*count)++] = strdup(line);
+        }
     }
+}
+
+int main() {
+    int count;
+    char **src = NULL;
+    char **dest = NULL;
+
+    // Read input from pipe or here-string, or current directory
+    read_from_pipe_or_here_string(&src, &count);
 
     // Create unique filenames file
+    char filenames_file[] = "/tmp/br.XXXXXX";
     int fd = mkstemp(filenames_file);
     if (fd == -1) {
         perror("Cannot create unique filenames file");
@@ -69,7 +81,7 @@ int main(int argc, char *argv[]) {
         perror("Cannot open temporary file");
         exit(EXIT_FAILURE);
     }
-    for (size_t i = 0; src[i] != NULL; i++) {
+    for (size_t i = 0; i < count; i++) {
         fprintf(fileptr, "%s\n", src[i]);
     }
     fclose(fileptr);
@@ -104,7 +116,8 @@ int main(int argc, char *argv[]) {
     dest[i] = NULL;
 
     // Check number of files/directories and rename them
-    for (size_t i = 0; src[i] != NULL && dest[i] != NULL; i++) {
+    int rename_count = 0;
+    for (size_t i = 0; i < count && dest[i] != NULL; i++) {
         if (strcmp(src[i], dest[i]) != 0) {
             struct stat st;
             if (stat(dest[i], &st) == 0 && (S_ISREG(st.st_mode) || S_ISDIR(st.st_mode))) {
@@ -116,15 +129,15 @@ int main(int argc, char *argv[]) {
                 perror("Error while renaming file/directory");
                 exit(EXIT_FAILURE);
             } else {
-                count++;
+                rename_count++;
             }
         }
     }
 
-    printf("%d files/directories renamed.\n", count);
+    printf("%d files/directories renamed.\n", rename_count);
 
     // Free memory
-    for (size_t i = 0; src[i] != NULL; i++) {
+    for (size_t i = 0; i < count; i++) {
         free(src[i]);
     }
     free(src);
@@ -132,6 +145,9 @@ int main(int argc, char *argv[]) {
         free(dest[i]);
     }
     free(dest);
+
+    // Remove temporary filenames file
+    remove(filenames_file);
 
     return EXIT_SUCCESS;
 }
