@@ -10,6 +10,11 @@
 
 #define MAX_FILES 1024
 
+/*
+	Nice to have Features like
+	edit owner, permission, deletion, move
+*/
+
 int is_current_or_parent_dir(const char *dir) {
     return (strcmp(dir, ".") == 0 || strcmp(dir, "..") == 0);
 }
@@ -89,7 +94,7 @@ int main() {
     // Open tempfile in editor
     char *editor = getenv("EDITOR");
     if (editor == NULL) {
-        editor = "vim";
+        editor = "nvim";
     }
     char command[PATH_MAX];
     snprintf(command, PATH_MAX, "%s %s", editor, filenames_file);
